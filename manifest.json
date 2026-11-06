@@ -1,0 +1,11 @@
+{
+  "name": "EGOZ Boutique Esotérica",
+  "short_name": "EGOZ",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0616",
+  "theme_color": "#0b0616",
+  "icons": [
+    { "src": "/img/icon-192.png", "sizes": "192x192", "type": "image/png" }
+  ]
+}

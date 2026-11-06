@@ -1,0 +1,106 @@
+# =============================================
+# EGOZ — Boutique Esotérica
+# .htaccess — Seguridad + URLs limpias
+# =============================================
+
+# ── MOTOR DE REESCRITURA ─────────────────────
+Options -Indexes
+RewriteEngine On
+RewriteBase /
+
+# ── HTTPS OBLIGATORIO (activar en producción) ─
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# ── WWW → SIN WWW (activar en producción) ────
+# RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+# RewriteRule ^ https://%1%{REQUEST_URI} [R=301,L]
+
+# ── URLs LIMPIAS ──────────────────────────────
+# /tienda → tienda.php
+RewriteRule ^tienda/?$              tienda.php [L,QSA]
+RewriteRule ^tienda/([a-z0-9-]+)/?$ tienda.php?categoria=$1 [L,QSA]
+
+# /producto/slug → producto.php?id=X (necesita slug en BD)
+RewriteRule ^producto/([a-z0-9-]+)/?$ producto.php?slug=$1 [L,QSA]
+
+# /carrito → carrito.php
+RewriteRule ^carrito/?$   carrito.php [L,QSA]
+
+# /checkout → checkout.php
+RewriteRule ^checkout/?$  checkout.php [L,QSA]
+
+# /gracias → gracias.php
+RewriteRule ^gracias/?$   gracias.php [L,QSA]
+
+# /sobre-mi → sobre-mi.php
+RewriteRule ^sobre-mi/?$  sobre-mi.php [L,QSA]
+
+# /contacto → contacto.php
+RewriteRule ^contacto/?$  contacto.php [L,QSA]
+
+# /admin → admin/dashboard.php
+RewriteRule ^admin/?$     admin/dashboard.php [L]
+
+# ── PROTEGER CARPETAS SENSIBLES ───────────────
+# Bloquear includes EXCEPTO carrito_helper
+RewriteRule ^includes/(?!carrito_helper\.php|guardar_cliente\.php|pedido_tienda\.php)    - [F,L]
+RewriteRule ^vendor/      - [F,L]
+RewriteRule ^admin/config\.php$ - [F,L]
+
+# ── URLs SIN .php (p. ej. /admin/login → admin/login.php) ──
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{DOCUMENT_ROOT}/$1.php -f
+RewriteRule ^(.+?)/?$ $1.php [L,QSA]
+
+# ── PROTEGER ARCHIVOS SENSIBLES ───────────────
+<FilesMatch "\.(sql|log|env|ini|sh|bak)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+<FilesMatch "^(config\.php|\.htaccess|\.env)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# ── CABECERAS DE SEGURIDAD ────────────────────
+<IfModule mod_headers.c>
+    Header always set X-Frame-Options "DENY"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    # Activar en producción con HTTPS:
+    # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+</IfModule>
+
+# ── CACHÉ ARCHIVOS ESTÁTICOS ──────────────────
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpg      "access plus 1 month"
+    ExpiresByType image/jpeg     "access plus 1 month"
+    ExpiresByType image/png      "access plus 1 month"
+    ExpiresByType image/webp     "access plus 1 month"
+    ExpiresByType text/css       "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+    ExpiresByType image/svg+xml  "access plus 1 month"
+</IfModule>
+
+# ── COMPRIMIR RESPUESTAS ──────────────────────
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css application/javascript
+</IfModule>
+
+# ── BLOQUEAR ACCESO DIRECTO A UPLOADS PHP ─────
+<FilesMatch "\.php$">
+    <If "%{REQUEST_URI} =~ m#^/uploads/#">
+        Order Allow,Deny
+        Deny from all
+    </If>
+</FilesMatch>
+
+# ── PÁGINA DE ERROR PERSONALIZADA ────────────
+ErrorDocument 404 /index.php
+ErrorDocument 403 /index.php
